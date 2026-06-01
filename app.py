@@ -3,13 +3,7 @@ import requests
 import os
 from dotenv import load_dotenv
 
-<<<<<<< Updated upstream
-load_dotenv()
-
-API_URL = os.getenv("API_URL")
-=======
 API_URL = st.secrets["API_URL"]
->>>>>>> Stashed changes
 
 st.title("rec_o")
 st.write("Frontend Streamlit connecté au backend FastAPI")
