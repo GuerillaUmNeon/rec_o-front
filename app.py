@@ -18,7 +18,7 @@ if st.button("Obtenir une recommandation"):
         "Genre": genre
     }
 
-    response = requests.post(API_URL, json=payload)
+    response = requests.post(f"{API_URL}/predict", json=payload)
 
     if response.status_code == 200:
         result = response.json()
