@@ -16,7 +16,7 @@ headers = {
     "X-API-Key": TOKEN_API_KEY
 }
 
-artist_query = st.text_input("Rechercher un artiste", "Eminem")
+artist_query = st.text_input("Rechercher un artiste")
 artist_options = {}
 
 if artist_query.strip():
@@ -29,8 +29,8 @@ if artist_query.strip():
     if search_response.status_code == 200:
         artists = search_response.json()
         artist_options = {
-            artist["id"]: (
-                f"{artist['name']} - {artist['disambiguation']}"
+            artist["artist_id"]: (
+                f"{artist['name']} ({artist['disambiguation']})"
                 if artist.get("disambiguation")
                 else artist["name"]
             )
@@ -48,7 +48,7 @@ selected_artist_ids = st.multiselect(
     key="selected_artist_ids",
 )
 
-artist_ids_text = st.text_input("IDs artistes supplémentaires", "")
+# artist_ids_text = st.text_input("IDs artistes supplémentaires", "")
 top_n = st.number_input("Nombre de recommandations", min_value=1, max_value=50, value=5)
 
 if st.button("Obtenir une recommandation"):
@@ -66,17 +66,18 @@ if st.button("Obtenir une recommandation"):
         st.warning("Trop de requêtes. Réessayez dans une minute.")
         st.stop()
 
-    try:
-        manual_artist_ids = [
-            int(artist_id.strip())
-            for artist_id in artist_ids_text.split(",")
-            if artist_id.strip()
-        ]
-    except ValueError:
-        st.error("Les IDs doivent être des nombres séparés par des virgules.")
-        st.stop()
+    # try:
+    #     manual_artist_ids = [
+    #         int(artist_id.strip())
+    #         for artist_id in artist_ids_text.split(",")
+    #         if artist_id.strip()
+    #     ]
+    # except ValueError:
+    #     st.error("Les IDs doivent être des nombres séparés par des virgules.")
+    #     st.stop()
 
-    artist_ids = selected_artist_ids + manual_artist_ids
+    # artist_ids = selected_artist_ids + manual_artist_ids
+    artist_ids = selected_artist_ids
 
     if not artist_ids:
         st.error("Sélectionne au moins un artiste ou renseigne un ID.")
@@ -93,9 +94,30 @@ if st.button("Obtenir une recommandation"):
 
     if response.status_code == 200:
         result = response.json()
+        artists = result.get("artists", [])
 
         st.success("Recommandation trouvée")
-        st.write("IDs recommandés :", result["ArtistIds"])
+
+        if not artists:
+            st.info("Aucun artiste recommandé.")
+        else:
+            for artist in artists:
+                st.subheader(artist.get("name", "Artiste inconnu"))
+                st.write("Genres :", ", ".join(artist.get("genre", [])))
+
+                website = next(
+                    (
+                        item.get("url") or item.get("urls")
+                        for item in artist.get("urls", [])
+                        if item.get("type") == 183
+                    ),
+                    None,
+                )
+
+                if website:
+                    st.markdown(f"[Site officiel]({website})")
+
+                st.divider()
 
     elif response.status_code == 429:
         st.warning("Trop de requêtes. Patientez un moment.")
