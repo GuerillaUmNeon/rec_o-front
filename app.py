@@ -12,8 +12,44 @@ WINDOW_SECONDS = 60
 st.title("rec_o")
 st.write("Frontend Streamlit connecté au backend FastAPI")
 
-artist_name = st.text_input("Nom de l'artiste", "Eminem")
-genre = st.text_input("Genre musical", "Rap")
+headers = {
+    "X-API-Key": TOKEN_API_KEY
+}
+
+artist_query = st.text_input("Rechercher un artiste", "Eminem")
+artist_options = {}
+
+if artist_query.strip():
+    search_response = requests.post(
+        f"{API_URL}/search/artist",
+        json={"name": artist_query},
+        headers=headers,
+    )
+
+    if search_response.status_code == 200:
+        artists = search_response.json()
+        artist_options = {
+            artist["id"]: (
+                f"{artist['name']} - {artist['disambiguation']}"
+                if artist.get("disambiguation")
+                else artist["name"]
+            )
+            for artist in artists
+        }
+    else:
+        st.warning("Recherche artiste indisponible")
+        st.write(search_response.text)
+
+available_artist_ids = list(artist_options.keys())
+selected_artist_ids = st.multiselect(
+    "Artistes de départ",
+    options=available_artist_ids,
+    format_func=lambda artist_id: artist_options.get(artist_id, str(artist_id)),
+    key="selected_artist_ids",
+)
+
+artist_ids_text = st.text_input("IDs artistes supplémentaires", "")
+top_n = st.number_input("Nombre de recommandations", min_value=1, max_value=50, value=5)
 
 if st.button("Obtenir une recommandation"):
     now = time.time()
@@ -21,33 +57,49 @@ if st.button("Obtenir une recommandation"):
         st.session_state.request_timestamps = []
 
     st.session_state.request_timestamps = [
-        t for t in st.session_state.request_timestamps
-        if now - t < WINDOW_SECONDS
+        timestamp
+        for timestamp in st.session_state.request_timestamps
+        if now - timestamp < WINDOW_SECONDS
     ]
 
     if len(st.session_state.request_timestamps) >= MAX_REQUESTS:
         st.warning("Trop de requêtes. Réessayez dans une minute.")
+        st.stop()
+
+    try:
+        manual_artist_ids = [
+            int(artist_id.strip())
+            for artist_id in artist_ids_text.split(",")
+            if artist_id.strip()
+        ]
+    except ValueError:
+        st.error("Les IDs doivent être des nombres séparés par des virgules.")
+        st.stop()
+
+    artist_ids = selected_artist_ids + manual_artist_ids
+
+    if not artist_ids:
+        st.error("Sélectionne au moins un artiste ou renseigne un ID.")
+        st.stop()
+
+    st.session_state.request_timestamps.append(now)
+
+    payload = {
+        "ArtistIds": artist_ids,
+        "TopN": top_n,
+    }
+
+    response = requests.post(f"{API_URL}/predict", json=payload, headers=headers)
+
+    if response.status_code == 200:
+        result = response.json()
+
+        st.success("Recommandation trouvée")
+        st.write("IDs recommandés :", result["ArtistIds"])
+
+    elif response.status_code == 429:
+        st.warning("Trop de requêtes. Patientez un moment.")
+
     else:
-        st.session_state.request_timestamps.append(now)
-
-        payload = {
-            "ArtistName": artist_name,
-            "Genre": genre,
-        }
-
-        headers = {"X-API-Key": TOKEN_API_KEY}
-        response = requests.post(f"{API_URL}/predict", json=payload, headers=headers)
-
-        if response.status_code == 200:
-            result = response.json()
-
-            st.success("Recommandation trouvée")
-            st.write("Artiste recommandé :", result["ArtistName"])
-            st.write("Genre :", result["Genre"])
-
-        elif response.status_code == 429:
-            st.warning("Trop de requêtes. Patientez un moment.")
-
-        else:
-            st.error("Erreur API")
-            st.write(response.text)
+        st.error("Erreur API")
+        st.write(response.text)
