@@ -19,8 +19,17 @@ headers = {"X-API-Key": TOKEN_API_KEY}
 if "selected_artists" not in st.session_state:
     st.session_state["selected_artists"] = {}
 
+if "blacklisted_artists" not in st.session_state:
+    st.session_state["blacklisted_artists"] = {}
+
 if "request_timestamps" not in st.session_state:
     st.session_state["request_timestamps"] = []
+
+if "last_artist_query" not in st.session_state:
+    st.session_state["last_artist_query"] = ""
+
+if "search_error" not in st.session_state:
+    st.session_state["search_error"] = None
 
 st.markdown(
     """
@@ -90,6 +99,15 @@ st.markdown(
         font-weight: 500;
     }
 
+    .blacklist-artist-row {
+        padding: 0.65rem 0.8rem;
+        border-radius: 14px;
+        background: color-mix(in srgb, #f59e0b 10%, var(--secondary-background-color));
+        border: 1px solid color-mix(in srgb, #f59e0b 28%, transparent);
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
     .result-name {
         font-size: 1.1rem;
         font-weight: 700;
@@ -127,7 +145,7 @@ st.markdown(
     <div class="hero-card">
         <div class="hero-title">rec_o</div>
         <div class="hero-subtitle">
-            Cherche des artistes, ajoute-les à ta sélection, puis découvre des recommandations.
+            Cherche des artistes, ajoute-les à ta requête ou à ta blacklist, puis découvre des recommandations.
         </div>
     </div>
     """,
@@ -139,6 +157,9 @@ left_col, right_col = st.columns([1, 1], gap="large")
 with left_col:
     if "selected_artists" not in st.session_state:
         st.session_state["selected_artists"] = {}
+
+    if "blacklisted_artists" not in st.session_state:
+        st.session_state["blacklisted_artists"] = {}
 
     if "search_results" not in st.session_state:
         st.session_state["search_results"] = []
@@ -152,22 +173,37 @@ with left_col:
     if "selected_search_label" not in st.session_state:
         st.session_state["selected_search_label"] = None
 
+    if "last_artist_query" not in st.session_state:
+        st.session_state["last_artist_query"] = ""
+
+    if "search_error" not in st.session_state:
+        st.session_state["search_error"] = None
+
     def run_artist_search():
         query = st.session_state["artist_query_input"].strip()
+        st.session_state["last_artist_query"] = query
 
         st.session_state["search_results"] = []
         st.session_state["search_option_labels"] = []
         st.session_state["search_option_lookup"] = {}
         st.session_state["selected_search_label"] = None
+        st.session_state["search_error"] = None
 
         if not query:
             return
 
-        search_response = requests.post(
-            f"{API_URL}/search/artist",
-            json={"name": query},
-            headers=headers,
-        )
+        try:
+            search_response = requests.post(
+                f"{API_URL}/search/artist",
+                json={"name": query},
+                headers=headers,
+                timeout=8,
+            )
+        except requests.RequestException:
+            st.session_state["search_error"] = (
+                "Impossible de contacter l'API de recherche artiste."
+            )
+            return
 
         if search_response.status_code == 200:
             artist_results = search_response.json()
@@ -205,7 +241,7 @@ with left_col:
     st.markdown('<div class="panel-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Recherche artiste</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="helper-text">Tape un nom puis appuie sur Entrée pour rechercher. Clique ensuite sur le bouton pour ajouter l’artiste.</div>',
+        '<div class="helper-text">Tape un nom puis appuie sur Entrée pour rechercher. Ajoute ensuite l’artiste à la requête ou à la blacklist.</div>',
         unsafe_allow_html=True,
     )
 
@@ -216,6 +252,12 @@ with left_col:
         key="artist_query_input",
         on_change=run_artist_search,
     )
+
+    if st.session_state["artist_query_input"].strip() != st.session_state["last_artist_query"]:
+        run_artist_search()
+
+    if st.session_state["search_error"]:
+        st.warning(st.session_state["search_error"])
 
     if st.session_state["search_option_labels"]:
         current_index = 0
@@ -234,11 +276,33 @@ with left_col:
 
         st.session_state["selected_search_label"] = selected_label
 
-        if st.button("Ajouter l'artiste", use_container_width=True, key="add_artist_button"):
-            selected_artist = st.session_state["search_option_lookup"][selected_label]
-            st.session_state["selected_artists"][selected_artist["artist_id"]] = {
-                "name": selected_artist["name"]
-            }
+        add_query_col, add_blacklist_col = st.columns(2)
+
+        with add_query_col:
+            if st.button(
+                "Ajouter à la requête",
+                use_container_width=True,
+                key="add_artist_button",
+            ):
+                selected_artist = st.session_state["search_option_lookup"][selected_label]
+                artist_id = selected_artist["artist_id"]
+                st.session_state["selected_artists"][artist_id] = {
+                    "name": selected_artist["name"]
+                }
+                st.session_state["blacklisted_artists"].pop(artist_id, None)
+
+        with add_blacklist_col:
+            if st.button(
+                "Ajouter à la blacklist",
+                use_container_width=True,
+                key="add_blacklist_button",
+            ):
+                selected_artist = st.session_state["search_option_lookup"][selected_label]
+                artist_id = selected_artist["artist_id"]
+                st.session_state["blacklisted_artists"][artist_id] = {
+                    "name": selected_artist["name"]
+                }
+                st.session_state["selected_artists"].pop(artist_id, None)
 
     elif st.session_state["artist_query_input"].strip():
         st.markdown(
@@ -274,6 +338,36 @@ with left_col:
 
         for artist_id in ids_to_remove:
             del st.session_state["selected_artists"][artist_id]
+
+    st.markdown('<div class="section-title">Blacklist artistes</div>', unsafe_allow_html=True)
+
+    if not st.session_state["blacklisted_artists"]:
+        st.markdown(
+            '<div class="empty-state">Aucun artiste blacklisté.</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        blacklist_ids_to_remove = []
+
+        for artist_id, artist_data in st.session_state["blacklisted_artists"].items():
+            col_name, col_remove = st.columns([5, 1], vertical_alignment="center")
+
+            with col_name:
+                st.markdown(
+                    f'<div class="blacklist-artist-row">{artist_data["name"]}</div>',
+                    unsafe_allow_html=True,
+                )
+
+            with col_remove:
+                if st.button(
+                    "✕",
+                    key=f"remove_blacklist_{artist_id}",
+                    use_container_width=True,
+                ):
+                    blacklist_ids_to_remove.append(artist_id)
+
+        for artist_id in blacklist_ids_to_remove:
+            del st.session_state["blacklisted_artists"][artist_id]
 
     top_n = st.number_input(
         "Nombre de recommandations",
@@ -319,6 +413,7 @@ with right_col:
         payload = {
             "ArtistIds": artist_ids,
             "TopN": top_n,
+            "BlacklistArtistIds": list(st.session_state["blacklisted_artists"].keys()),
         }
 
         response = requests.post(
