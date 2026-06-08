@@ -1,88 +1,79 @@
-# rec_o-front
+# rec_o — Streamlit archive
 
-Frontend Streamlit du projet `rec_o-front`, connecte à l'API FastAPI du depot `rec_o`.
+This repository contains the **archived Streamlit version** of `rec_o`, the original interface used to search artists, manage a query and blacklist, and fetch artist recommendations from the recommendation API.
 
-## Prerequis
+The active frontend has moved to the new **Next.js** implementation. Use and maintain the new application here:
 
-Le backend doit etre lancé avant d'utiliser le frontend.
+- New frontend: [rec_o Next.js](https://github.com/GuerillaUmNeon/rec_o-next)
 
-Depuis le depot `rec_o` :
+## Status
 
-```bash
-uvicorn app.main:app --reload
-```
+This codebase is kept for reference, history, and comparison purposes only.
 
-L'API est alors disponible sur :
+- Archived: no active feature development
+- Legacy stack: Streamlit + Python
+- Scope: artist search, selection, blacklist management, and recommendation display
 
-- `http://localhost:8000`
-- `http://localhost:8000/docs`
-- `http://localhost:8000/predict`
+## What this version did
 
-NB: plus de détails dans le README du backend.
+The archived Streamlit app provided:
 
-## Installation
+- Artist search through the backend API
+- Selection of artists for the recommendation query
+- Artist blacklist management
+- Basic request-rate limiting in session state
+- Artist recommendation display with genres and official website links
+- A custom Streamlit-styled UI using injected CSS
 
-Depuis le depot `rec_o-front` :
-
-```bash
-cd ~/code
-mkdir GuerillaUmNeon
-git clone git@github.com:GuerillaUmNeon/rec_o-front.git
-cd rec_o-front
-
-pyenv install 3.13.13
-pyenv virtualenv 3.13.13 rec-o-front-env
-pyenv local rec-o-front-env
-
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-## Configuration
-
-Le frontend lit l'URL de l'API depuis les secrets Streamlit.
-
-Creer un fichier `.streamlit/secrets.toml` avec :
+It relied on two secrets:
 
 ```toml
-API_URL = "https://rec-o-api-779590423195.europe-west1.run.app"
-TOKEN_API_KEY = "your-secret-token-here"
+API_URL="http://127.0.0.1:8000"
+TOKEN_API_KEY="123abc456def"
 ```
 
-Pour tester avec un backend local, remplacez `API_URL` par exemple par :
+## Legacy stack
 
-```toml
-API_URL = "http://127.0.0.1:8001"
-TOKEN_API_KEY = "your-secret-token-here"
-```
+- Python
+- Streamlit
+- Requests
+- Backend API secured with `X-API-Key`
 
-NB: vous pouvez aussi tester le front local qui appelle le back de prod avec l'URL de prod.
+## Notes on the archived code
 
-## Lancement
+This version was centered on a single Streamlit page and used `st.session_state` to store:
 
-Depuis le depot `rec_o-front` :
+- selected artists
+- blacklisted artists
+- search results
+- request timestamps
+- current query and search errors
 
-```bash
-streamlit run app.py
-```
+The UI included:
 
-## Contrat API actuel
+- a hero card for the `rec_o` title and short description
+- left-column controls for search, selected artists, blacklist, and recommendation count
+- a right-column recommendation panel
+- custom CSS for cards, selected rows, blacklist rows, and genre chips
 
-Le frontend envoie une requete `POST` vers `/predict`.
+## Collaborators
 
-Payload exemple :
+- [cherguia](https://github.com/cherguia)
+- [ThomasIsHere](https://github.com/ThomasIsHere)
+- [BenJ676](https://github.com/BenJ676)
+- [GuerillaUmNeon](https://github.com/GuerillaUmNeon)
 
-```json
-{
-  "ArtistIds": [946],
-  "TopN": 5
-}
-```
+## Migration
 
-Reponse attendue :
+This Streamlit version is preserved as an archive. For current development, refer to the new Next.js frontend:
 
-```json
-{
-  "ArtistIds": [269151, 1341893, 2504, 2052342, 2091273]
-}
-```
+- [rec_o Next.js](https://github.com/GuerillaUmNeon/rec_o-next)
+
+## Archive purpose
+
+This folder remains useful for:
+
+- tracing the first product iteration
+- comparing UX and architecture decisions
+- preserving the original Streamlit implementation
+- documenting the transition from Streamlit to Next.js
