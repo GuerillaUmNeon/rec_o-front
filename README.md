@@ -1,79 +1,157 @@
-# rec_o — Streamlit archive
+# rec_o — Streamlit Archive
 
-This repository contains the **archived Streamlit version** of `rec_o`, the original interface used to search artists, manage a query and blacklist, and fetch artist recommendations from the recommendation API.
+A **2-week bootcamp data science project** – the original Streamlit frontend for exploring music recommendations.
 
-The active frontend has moved to the new **Next.js** implementation. Use and maintain the new application here:
+**Live Archive:** [reco-front.streamlit.app](https://reco-front.streamlit.app/)
 
-- New frontend: [rec_o Next.js](https://github.com/GuerillaUmNeon/rec_o-next)
+## Overview
 
-## Status
+This repository contains the **original Streamlit implementation** of rec_o, built during a 2-week data science bootcamp project. It served as the proof-of-concept for the music recommendation discovery interface and demonstrated the core functionality before evolving into the production-ready Next.js version.
 
-This codebase is kept for reference, history, and comparison purposes only.
+**The active frontend has moved to:** [rec_o-next (Next.js)](https://github.com/GuerillaUmNeon/rec_o-next)
 
-- Archived: no active feature development
-- Legacy stack: Streamlit + Python
-- Scope: artist search, selection, blacklist management, and recommendation display
+## Project Status
 
-## What this version did
+- **Status:** Archived – no active development
+- **Purpose:** Reference, historical comparison, and transition documentation
+- **Stack:** Python + Streamlit (legacy)
+- **Scope:** Artist search, selection, blacklist management, and recommendation display
 
-The archived Streamlit app provided:
+## Architecture & Implementation
 
-- Artist search through the backend API
-- Selection of artists for the recommendation query
-- Artist blacklist management
-- Basic request-rate limiting in session state
-- Artist recommendation display with genres and official website links
-- A custom Streamlit-styled UI using injected CSS
+### Single-Page Application
 
-It relied on two secrets:
+The Streamlit app was built as a single-page application (`app.py`) using `st.session_state` for client-side state management across user interactions.
 
-```toml
-API_URL="http://127.0.0.1:8000"
-TOKEN_API_KEY="123abc456def"
+### UI Layout
+
+- **Hero Section:** Title and project description
+- **Left Column:** Search, artist selection, blacklist, and recommendation count controls
+- **Right Column:** Real-time recommendation results display
+
+### Features Implemented
+
+- 🔍 **Artist Search** – Backend API integration for artist lookup with disambiguation
+- ✅ **Selection Management** – Add/remove artists from query list
+- 🚫 **Blacklist Controls** – Exclude artists from recommendations
+- ⏱️ **Request Rate Limiting** – 5 requests per 60-second window
+- 🏷️ **Genre Display** – Recommendation results with genre chips
+- 🔗 **Official Links** – Direct links to artist websites via MusicBrainz
+
+### State Management
+
+Session state tracked:
+
+- `selected_artists` – Artists included in queries
+- `blacklisted_artists` – Artists to exclude
+- `search_results` – Current search results
+- `request_timestamps` – Rate limiting timestamps
+- `search_error` – User-facing error messages
+
+### Styling
+
+Custom CSS injected into Streamlit with responsive cards, themed chips, and context-aware colors for selected/blacklisted items.
+
+## Tech Stack
+
+- **Language:** Python 3
+- **Framework:** [Streamlit](https://streamlit.io/) – Rapid web app framework
+- **HTTP Client:** [Requests](https://requests.readthedocs.io/) – API communication
+- **Environment:** [python-dotenv](https://pypi.org/project/python-dotenv/) – Configuration management
+
+## Requirements
+
+```
+streamlit
+requests
+python-dotenv
 ```
 
-## Legacy stack
+## Environment Configuration
 
-- Python
-- Streamlit
-- Requests
-- Backend API secured with `X-API-Key`
+Requires `.streamlit/secrets.toml`:
 
-## Notes on the archived code
+```toml
+API_URL = "http://127.0.0.1:8000"
+TOKEN_API_KEY = "123abc456def"
+```
 
-This version was centered on a single Streamlit page and used `st.session_state` to store:
+## Why This Was Archived
 
-- selected artists
-- blacklisted artists
-- search results
-- request timestamps
-- current query and search errors
+While functional, the Streamlit implementation had limitations:
 
-The UI included:
+- **Scalability** – Single-page state management became complex
+- **Customization** – Limited control over UI/UX beyond Streamlit defaults
+- **Performance** – Full-page refreshes on state changes
+- **Type Safety** – No TypeScript support
+- **Production Readiness** – Not ideal for complex interactions
 
-- a hero card for the `rec_o` title and short description
-- left-column controls for search, selected artists, blacklist, and recommendation count
-- a right-column recommendation panel
-- custom CSS for cards, selected rows, blacklist rows, and genre chips
+These constraints led to the development of **rec_o-next**, a modern Next.js implementation with:
+
+- Full React component architecture
+- TypeScript for type safety
+- Tailwind CSS for advanced styling
+- Server-side API routes
+- Enhanced user experience with dual input modes (manual search + ListenBrainz)
+
+## How to Run Locally
+
+```bash
+# Clone repository
+git clone https://github.com/GuerillaUmNeon/rec_o-front.git
+cd rec_o-front
+
+# Create secrets file
+mkdir -p .streamlit
+cat > .streamlit/secrets.toml << EOF
+API_URL = "http://127.0.0.1:8000"
+TOKEN_API_KEY = "your-api-key"
+EOF
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run Streamlit app
+streamlit run app.py
+```
+
+The app will open at `http://localhost:8501`
+
+## Project History
+
+**Bootcamp Timeline:**
+
+- **Week 1-2:** Built initial Streamlit proof-of-concept during data science bootcamp
+- **Post-Bootcamp:** Evolved into production-ready Next.js implementation
+- **Current:** Streamlit version archived as reference
 
 ## Collaborators
 
-- [cherguia](https://github.com/cherguia)
-- [ThomasIsHere](https://github.com/ThomasIsHere)
-- [BenJ676](https://github.com/BenJ676)
-- [GuerillaUmNeon](https://github.com/GuerillaUmNeon)
+This bootcamp project was developed by:
 
-## Migration
+- [@GuerillaUmNeon](https://github.com/GuerillaUmNeon)
+- [@ThomasIsHere](https://github.com/ThomasIsHere)
+- [@cherguia](https://github.com/cherguia)
+- [@BenJ676](https://github.com/BenJ676)
 
-This Streamlit version is preserved as an archive. For current development, refer to the new Next.js frontend:
+Thank you to all contributors who helped build this initial version during the bootcamp!
 
-- [rec_o Next.js](https://github.com/GuerillaUmNeon/rec_o-next)
+## Related Projects
 
-## Archive purpose
+- **Current Frontend:** [rec_o-next](https://github.com/GuerillaUmNeon/rec_o-next) – Modern Next.js implementation
+- **Backend API:** [rec_o](https://github.com/GuerillaUmNeon/rec_o) – Recommendation engine and search service
+- **Live Application:** [rec-o-next.vercel.app](https://rec-o-next.vercel.app)
 
-This folder remains useful for:
+## Archive Value
 
-- tracing the first product iteration
-- comparing UX and architecture decisions
-- preserving the original Streamlit implementation
-- documenting the transition from Streamlit to Next.js
+This repository remains useful for:
+
+- 📖 Tracing the first product iteration
+- 🔄 Comparing UX and architecture decisions (Streamlit vs Next.js)
+- 🏛️ Preserving the original implementation history
+- 📚 Documenting the technology migration path
+- 🎓 Educational reference for Streamlit development
+
+## License
+
+This project is private. See repository settings for access details.
